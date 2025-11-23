@@ -1,38 +1,33 @@
-"""Evaluation script computing RMSE, MAE, MAPE and plotting predictions."""
-import numpy as np, pandas as pd
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from tensorflow.keras.models import load_model
-import joblib
-import matplotlib.pyplot as plt
+
+"""Aggregate backtest results (artifacts/backtest_results.json) and produce a summary table and plots for 7-day and 30-day horizons.
+"""
+import json, pandas as pd, matplotlib.pyplot as plt
 from pathlib import Path
 
-def main(model_path='artifacts/final_model.h5'):
-    df_test = pd.read_csv('data/test.csv')
-    X_test = df_test.drop(columns=['MedHouseVal'], errors='ignore')
-    if 'MedHouseVal' not in df_test.columns and 'target' in df_test.columns:
-        X_test = df_test.drop(columns=['target'])
-    y_test = df_test['MedHouseVal'] if 'MedHouseVal' in df_test.columns else df_test['target']
-    scaler_path = Path('artifacts/scaler_baseline.pkl')
-    if scaler_path.exists():
-        scaler = joblib.load(scaler_path)
-        Xs = scaler.transform(X_test)
-    else:
-        from sklearn.preprocessing import StandardScaler
-        scaler = StandardScaler(); Xs = scaler.fit_transform(X_test)
-    model = load_model(model_path)
-    preds = model.predict(Xs).ravel()
-    rmse = mean_squared_error(y_test, preds, squared=False)
-    mae = mean_absolute_error(y_test, preds)
-    mape = (np.mean(np.abs((y_test - preds) / (np.clip(np.abs(y_test), 1e-8, None))))) * 100
-    print('RMSE:', rmse, 'MAE:', mae, 'MAPE(%):', mape)
-    # plot
-    plt.figure(figsize=(8,4))
-    plt.plot(y_test.values[:200], label='true')
-    plt.plot(preds[:200], label='pred')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig('artifacts/prediction_sample.png')
-    print('Saved artifacts/prediction_sample.png')
+def summarize(results_path='artifacts/backtest_results.json'):
+    r = json.load(open(results_path))
+    summary = {'model':[], 'horizon':[], 'rmse_mean':[], 'mae_mean':[], 'mape_mean':[]}
+    for model in r:
+        for h in r[model]:
+            df = pd.DataFrame(r[model][h])
+            summary['model'].append(model)
+            summary['horizon'].append(int(h))
+            summary['rmse_mean'].append(df['rmse'].mean())
+            summary['mae_mean'].append(df['mae'].mean())
+            summary['mape_mean'].append(df['mape'].mean())
+    sdf = pd.DataFrame(summary)
+    Path('artifacts').mkdir(exist_ok=True)
+    sdf.to_csv('artifacts/backtest_summary.csv', index=False)
+    print('Saved artifacts/backtest_summary.csv')
+    # plot comparison
+    for h in sorted(sdf['horizon'].unique()):
+        sub = sdf[sdf['horizon']==h]
+        plt.figure(figsize=(6,3))
+        plt.bar(sub['model'], sub['rmse_mean'])
+        plt.title(f'RMSE comparison - {h}-day horizon')
+        plt.tight_layout()
+        plt.savefig(f'artifacts/rmse_{h}d.png')
+    print('Saved comparison plots in artifacts/')
 
 if __name__=='__main__':
-    main()
+    summarize()

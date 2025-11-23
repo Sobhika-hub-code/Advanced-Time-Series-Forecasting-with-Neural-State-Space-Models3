@@ -1,32 +1,20 @@
-Advanced DL Hyperparameter Optimization Project
-==================================================
 
-Objective
----------
-Implement and compare baseline search (Grid/Random) vs Bayesian optimization for tuning a deep learning model (TensorFlow/Keras) on a tabular dataset (California Housing). Provide reproducible scripts, walk-forward/backtesting skeleton, evaluation, and a report with results and analysis.
+Prophet Time Series Forecasting Submission
+==========================================
 
-Contents
---------
-- data/: dataset CSV (produced by data_prep.py)
-- src/: scripts (data_prep.py, model_builder.py, tune_kt.py, baseline_search.py, train_final.py, evaluate.py, backtest.py)
-- notebooks/: starter notebook to run experiments interactively
-- reports/: final report and screenshots
-- artifacts/: where models/checkpoints and tuner results will be saved
+This project implements the required deliverables for 'Advanced Time Series Forecasting with Prophet':
+- Uses a multi-year daily time series with external regressors (temperature, holiday indicator)
+- Implements Prophet model training and forecasting (90-day horizon by default)
+- Implements Prophet hyperparameter optimization using Optuna (tune_prophet_optuna.py)
+- Implements a SARIMAX baseline (sarimax_baseline.py) using pmdarima for automated order selection
+- Implements walk-forward backtesting (backtest.py) comparing Prophet and SARIMAX across 7-day and 30-day horizons; computes RMSE/MAE/MAPE
+- Provides evaluation scripts and a detailed report
 
-How to run (example):
-1. Create environment and install dependencies:
-   pip install -r requirements.txt
-2. Prepare data:
-   python src/data_prep.py
-3. Run baseline search (random/grid):
-   python src/baseline_search.py --n_iter 20
-4. Run Bayesian optimization (Keras Tuner):
-   python src/tune_kt.py --max_trials 20 --executions_per_trial 1
-5. Train final model using best hyperparameters:
-   python src/train_final.py --config artifacts/best_config.json
-6. Evaluate / Backtest:
-   python src/evaluate.py --model artifacts/final_model.h5
+Quick start (after creating a virtualenv and installing requirements):
+  python src/data_gen.py
+  python src/tune_prophet_optuna.py --trials 30
+  python src/sarimax_baseline.py
+  python src/backtest.py --horizons 7 30 --initial-window-days 365
+  python src/evaluate.py
 
-Notes:
-- TensorFlow and Keras-Tuner are NOT preinstalled in this environment; scripts are ready-to-run locally.
-- The report contains methodology, parameter search spaces, and evaluation guidance.
+See reports/report.md for more details and explanations of hyperparameters and evaluation.
